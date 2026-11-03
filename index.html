@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Сканер СТРОЙМАКС</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root { --bg: #0f1114; --fg: #f2f3f5; --muted: #9aa0a8; --accent: #f5a623; --ok: #3ccf7a; --err: #ff5a5a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font: 16px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { padding: 12px 16px 8px; }
+  header b { color: var(--accent); }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  #wrap { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #000; }
+  #reader { width: 100%; height: 100%; }
+  #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+  #reader img, #reader__dashboard, #reader__header_message { display: none !important; }
+  #status { position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(0,0,0,.65); text-align: center; font-size: 15px; }
+  #status.ok { background: rgba(20,90,50,.9); }
+  #status.err { background: rgba(120,20,20,.9); }
+  #torch { position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border: 0; border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 22px; display: none; }
+  #torch.on { background: var(--accent); }
+  form { display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  input { flex: 1; min-width: 0; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1b1e23;
+    color: var(--fg); font-size: 16px; }
+  button[type=submit] { padding: 0 16px; border: 0; border-radius: 10px; background: var(--accent); color: #111;
+    font-weight: 600; font-size: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <b>Инструменты СТРОЙМАКС</b>
+  <p>Наведите камеру на штрихкод или QR-код — он считается сам.</p>
+</header>
+<div id="wrap">
+  <div id="reader"></div>
+  <button id="torch" type="button" aria-label="Фонарик">🔦</button>
+  <div id="status">Запускаю камеру…</div>
+</div>
+<form id="manual">
+  <input id="code" placeholder="или введите код вручную" autocomplete="off" inputmode="text">
+  <button type="submit">ОК</button>
+</form>
+<script>
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+  const statusEl = document.getElementById("status");
+  const torchBtn = document.getElementById("torch");
+  let done = false, scanner = null, running = false, torchOn = false;
+
+  function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || ""; }
+
+  function send(code) {
+    code = code.trim();
+    if (!code || done) return;
+    done = true;
+    setStatus("✅ " + code, "ok");
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+    const finish = () => {
+      // sendData работает, когда сканер открыт кнопкой «📷 Сканировать» в меню бота
+      try {
+        if (!tg || tg.platform === "unknown") throw new Error("not in Telegram");
+        tg.sendData(code);
+      } catch (e) {
+        setStatus("Считан код: " + code + " (откройте сканер кнопкой в меню бота, чтобы отправить)", "ok");
+      }
+    };
+    if (running) { running = false; scanner.stop().catch(() => {}).finally(finish); } else finish();
+  }
+
+  document.getElementById("manual").addEventListener("submit", (e) => {
+    e.preventDefault();
+    send(document.getElementById("code").value);
+  });
+
+  torchBtn.addEventListener("click", () => {
+    torchOn = !torchOn;
+    scanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] })
+      .then(() => torchBtn.classList.toggle("on", torchOn))
+      .catch(() => { torchOn = false; torchBtn.style.display = "none"; });
+  });
+
+  function start() {
+    if (typeof Html5Qrcode === "undefined") {
+      setStatus("Не удалось загрузить сканер. Проверьте интернет и откройте снова.", "err");
+      return;
+    }
+    const F = Html5QrcodeSupportedFormats;
+    scanner = new Html5Qrcode("reader", {
+      verbose: false,
+      formatsToSupport: [F.QR_CODE, F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39,
+                         F.CODE_93, F.CODABAR, F.ITF, F.DATA_MATRIX],
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    });
+    scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 12,
+        qrbox: (w, h) => ({ width: Math.floor(w * 0.85), height: Math.floor(Math.min(h * 0.45, w * 0.6)) }),
+        videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+      },
+      (text) => send(text),
+      () => {}
+    ).then(() => {
+      running = true;
+      if (done) { running = false; scanner.stop().catch(() => {}); return; }
+      setStatus("Наведите на штрихкод");
+      try {
+        const caps = scanner.getRunningTrackCapabilities();
+        if (caps && caps.torch) torchBtn.style.display = "block";
+      } catch (e) {}
+    }).catch((err) => {
+      const msg = String(err);
+      if (/NotAllowed|Permission/i.test(msg))
+        setStatus("Нет доступа к камере. Разрешите Telegram доступ к камере в настройках телефона и откройте снова.", "err");
+      else if (/NotFound|Requested device/i.test(msg))
+        setStatus("Камера не найдена. Введите код вручную ниже.", "err");
+      else
+        setStatus("Не удалось запустить камеру: " + msg, "err");
+    });
+  }
+  start();
+</script>
+</body>
+</html>

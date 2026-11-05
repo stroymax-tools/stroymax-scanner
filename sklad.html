@@ -1,0 +1,755 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="https://telegram.org/js/telegram-web-app.js"></script><style>body{margin:0;font-size:14px}</style></head><body>
+<title>Монтаж склада КР</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 3D viewport fills the left, a working panel docks right (stacks under the model on phones). */
+:root{
+  --bg:#eef1f3; --surface:#ffffff; --line:#d5dbe0; --ink:#1b2229; --muted:#5d6873;
+  --accent:#2d6cdf; --done:#2f8f6b; --today:#e09a00; --ghost:#9aa6b1; --danger:#b8412f;
+  --scene:#e4e9ed; --grid:#b9c3cc;
+  --f-ui:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161a; --surface:#1a2026; --line:#2c353d; --ink:#e3e8ec; --muted:#93a0ab;
+  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c;
+  --scene:#161b20; --grid:#36414b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161a; --surface:#1a2026; --line:#2c353d; --ink:#e3e8ec; --muted:#93a0ab;
+  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c;
+  --scene:#161b20; --grid:#36414b; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;overflow:hidden}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--surface)}
+header h1{font-size:16px;font-weight:700;margin:0;letter-spacing:.01em}
+header .sub{color:var(--muted);font-size:12px}
+.hdr-progress{margin-left:auto;display:flex;align-items:center;gap:10px;font-family:var(--f-num);font-size:13px}
+.hdr-progress .bar{width:140px}
+.main{min-height:0;display:grid;grid-template-columns:1fr 380px}
+.viewport{position:relative;min-height:0;background:var(--scene)}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.panel{min-height:0;overflow:auto;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column}
+@media (max-width:860px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100%}
+  .main{grid-template-columns:1fr;grid-template-rows:56vh auto}
+  .viewport{min-height:320px}
+  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  .hdr-progress .bar{width:90px}
+}
+.tabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:2}
+.tabs button{flex:1;padding:12px 8px;border:0;background:none;color:var(--muted);font:600 13px var(--f-ui);cursor:pointer;border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab{padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:18px}
+@media (min-width:861px){.tab{padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px))}}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec h3{margin:0;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1;min-width:0}
+select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0;width:100%}
+.btn{font:600 14px var(--f-ui);border-radius:6px;padding:10px 14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--done);border-color:var(--done);color:#fff}
+.btn.warn{color:var(--danger)}
+.btn.small{padding:6px 10px;font-size:12px}
+.btn.block{width:100%}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.selbox{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.selcount{font-family:var(--f-num);font-size:22px;font-weight:600}
+.selcount small{font-family:var(--f-ui);font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;max-height:84px;overflow:auto}
+.chip{font:12px var(--f-num);padding:2px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line)}
+.hint{font-size:12px;color:var(--muted);line-height:1.45}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:1}
+.bar>i{display:block;height:100%;background:var(--done)}
+.prow{display:grid;grid-template-columns:22px 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.prow .nm{font-size:13px;min-width:0}
+.prow .nm b{font-family:var(--f-num);font-weight:600;margin-right:6px}
+.prow .ct{font:12px var(--f-num);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.prow .bar{grid-column:2/4}
+.prow input{margin:0;width:16px;height:16px;accent-color:var(--accent)}
+.day{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.day.on{border-color:var(--today)}
+.day .top{display:flex;align-items:center;gap:8px}
+.day .dt{font:600 14px var(--f-num)}
+.day .n{font:12px var(--f-num);color:var(--muted)}
+.day .top .btn{margin-left:auto}
+.day ul{margin:0;padding:0;list-style:none;font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.empty{color:var(--muted);font-size:13px;line-height:1.5;border:1px dashed var(--line);border-radius:8px;padding:14px}
+/* viewport overlays */
+.ov{position:absolute;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.ov>*{pointer-events:auto}
+.ov.tl{top:12px;left:max(12px,env(safe-area-inset-left,0px));right:12px}
+.ov.bl{bottom:12px;left:max(12px,env(safe-area-inset-left,0px));right:12px;align-items:flex-end}
+.pill{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.pill select{width:auto;padding:4px 6px;font-size:12px}
+.lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.info{max-width:320px;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px}
+.info .mk{font:600 15px var(--f-num)}
+.info .st{font-size:12px;color:var(--muted)}
+.banner{font-size:12px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--line);color:var(--muted)}
+.banner[data-kind="warn"]{color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:6px;font-size:13px;z-index:20;transition:opacity .2s}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <h1>Склад (пищеблок) · монтаж каркаса</h1>
+      <div class="sub">PICH132.25-КР · оси 1–16 / А–У · 90 × 96 м</div>
+    </div>
+    <div class="hdr-progress"><span id="totPct">0%</span><div class="bar"><i id="totBar" style="width:0"></i></div><span id="totCnt">0 / 0</span></div>
+  </header>
+  <div class="main">
+    <div class="viewport">
+      <canvas id="cv" aria-label="3D-модель каркаса склада"></canvas>
+      <div class="ov tl">
+        <div class="pill">
+          <span class="lg"><i style="background:var(--done)"></i>смонтировано</span>
+          <span class="lg"><i style="background:var(--today)"></i><span id="lgDay">за день</span></span>
+          <span class="lg"><i style="background:var(--accent)"></i>выделено</span>
+          <span class="lg"><i style="background:var(--ghost);opacity:.5"></i>по проекту</span>
+        </div>
+        <div class="pill">
+          <label for="viewDate">Состояние на</label>
+          <select id="viewDate"><option value="">сегодня</option></select>
+        </div>
+        <div class="pill"><label class="lg" for="hideGhost"><input type="checkbox" id="hideGhost"> только смонтированное</label></div>
+      </div>
+      <div class="ov bl"><div class="pill info" id="info" hidden></div></div>
+    </div>
+    <div class="panel">
+      <div class="banner" id="banner">Подключаюсь к общему журналу…</div>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="mark" id="t-mark">Отметка</button>
+        <button role="tab" aria-selected="false" data-tab="prog" id="t-prog">Прогресс</button>
+        <button role="tab" aria-selected="false" data-tab="log" id="t-log">Журнал</button>
+      </div>
+
+      <div class="tab" id="tab-mark">
+        <div class="selbox">
+          <div class="selcount"><span id="selN">0</span><small>элементов выделено</small></div>
+          <div class="chips" id="selChips"></div>
+          <label class="fld">Дата монтажа<input type="date" id="mdate"></label>
+          <div class="row">
+            <button class="btn primary" id="bMount" disabled>Смонтировано</button>
+            <button class="btn warn" id="bUnmount" disabled>Снять отметку</button>
+            <button class="btn" id="bClear" disabled>Сбросить</button>
+          </div>
+          <div class="confirm" id="unConfirm" hidden>
+            <span id="unText"></span>
+            <button class="btn small warn" id="bUnYes">Да, снять</button>
+            <button class="btn small" id="bUnNo">Отмена</button>
+          </div>
+        </div>
+        <p class="hint">Нажимайте на элементы модели, чтобы выделить их. Повторное нажатие снимает выделение. Для захвата сразу целого участка используйте выбор по осям.</p>
+        <div class="sec">
+          <h3>Выбор по осям</h3>
+          <div class="row">
+            <label class="fld">Оси от<select id="ax1"></select></label>
+            <label class="fld">до<select id="ax2"></select></label>
+            <label class="fld">Ряды от<select id="rw1"></select></label>
+            <label class="fld">до<select id="rw2"></select></label>
+          </div>
+          <label class="fld">Элементы<select id="rtype"></select></label>
+          <div class="row">
+            <label class="lg" for="onlyNot"><input type="checkbox" id="onlyNot" checked> только ещё не смонтированные</label>
+          </div>
+          <button class="btn block" id="bRange">Выделить участок</button>
+        </div>
+      </div>
+
+      <div class="tab" id="tab-prog" hidden>
+        <div class="sec">
+          <h3>По видам элементов</h3>
+          <p class="hint">Флажок слева скрывает или показывает вид элементов на модели.</p>
+          <div id="progList"></div>
+        </div>
+        <div class="sec">
+          <h3>Отчёт</h3>
+          <button class="btn" id="bCsv">Скачать отчёт CSV</button>
+          <p class="hint" id="csvHint" hidden>Скачивание недоступно в этом окне.</p>
+        </div>
+      </div>
+
+      <div class="tab" id="tab-log" hidden>
+        <div class="sec">
+          <h3>Смонтировано по дням</h3>
+          <div id="logList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script>
+(function(){
+"use strict";
+// Внутри Telegram (Mini App) журнал приходит в ссылке от бота, отметки уходят боту через sendData
+const TG = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? Telegram.WebApp : null;
+if (TG){ TG.ready(); TG.expand(); document.documentElement.dataset.theme = TG.colorScheme === "dark" ? "dark" : "light"; }
+const L = "АБВГДЕЖИКЛМНПРСТУ";            // буквенные оси, шаг 6 м
+const AX = i => String(i + 1);              // цифровые оси 1..16, шаг 6 м
+
+// ---- Виды элементов (по ведомостям раздела КР) ----
+const TYPES = {
+  fund:   {name:"Фундаменты", mk:"РМ",  fam:"c"},
+  col:    {name:"Колонны ж/б", mk:"К",  fam:"c"},
+  scol:   {name:"Колонны стальные", mk:"НК", fam:"s"},
+  truss:  {name:"Фермы стропильные", mk:"Фс", fam:"s"},
+  ptruss: {name:"Фермы подстропильные", mk:"Фп", fam:"s"},
+  strut:  {name:"Распорки", mk:"Рс", fam:"s"},
+  vbrace: {name:"Связи вертикальные", mk:"Свп", fam:"s"},
+  hbrace: {name:"Связи горизонтальные", mk:"Сг", fam:"s"},
+  beam:   {name:"Балки площадки +7.500", mk:"Б2", fam:"s"},
+  joist:  {name:"Балки настила", mk:"ВБ1", fam:"s"},
+  deck:   {name:"Плита по профлисту", mk:"П", fam:"c"},
+};
+
+// ---- Генерация элементов по схемам КР (листы 3, 11–14) ----
+function generate(){
+  const E = [];
+  const P = (id, t, m, n, g) => E.push(Object.assign({id, t, m, n}, g));
+  const K1 = [1,4,7,10,12,14], R1 = [4,8,12];
+  // Фундаменты (лист 3)
+  for (let i = 1; i <= 14; i++) for (const j of [0,16]) P(`F-${i}-${j}`,"fund","РМ2-1",`${AX(i)}/${L[j]}`,{x:i*6,y:j*6});
+  for (const i of [1,14]) for (let j = 1; j <= 15; j++) if (j % 4) P(`F-${i}-${j}`,"fund","РМ1-1",`${AX(i)}/${L[j]}`,{x:i*6,y:j*6});
+  for (const i of [0,15]) for (let j = 2; j <= 14; j++) P(`F-${i}-${j}`,"fund","РМ2",`${AX(i)}/${L[j]}`,{x:i*6,y:j*6});
+  for (const j of R1) for (const i of K1) P(`F-${i}-${j}`,"fund",i>=12?"РМ6":"РМ7",`${AX(i)}/${L[j]}`,{x:i*6,y:j*6});
+  const OUT = [[-3.5,8,"за осью 1"],[-3.5,9,"за осью 1"],[93.5,7,"за осью 16"],[93.5,8,"за осью 16"]];
+  for (const [x,j,s] of OUT) P(`F-o${x}-${j}`,"fund","РМ1",`${s} / ${L[j]}`,{x,y:j*6});
+  // Колонны ж/б (лист 11)
+  const rc = new Set();
+  const C = (i,j,m) => { rc.add(i+"-"+j); P(`C-${i}-${j}`,"col",m,`${AX(i)}/${L[j]}`,{x:i*6,y:j*6}); };
+  for (const j of R1) for (const i of K1) C(i,j,"К1");
+  for (let i = 1; i <= 14; i++) for (const j of [0,16]) C(i,j,"К2");
+  for (const i of [1,14]) for (let j = 1; j <= 15; j++) if (j % 4) C(i,j,"К3");
+  for (const i of [0,15]) for (let j = 2; j <= 14; j++) C(i,j,"К5");
+  for (const [x,j,s] of OUT) P(`C-o${x}-${j}`,"col","К5",`${s} / ${L[j]}`,{x,y:j*6,porch:1});
+  // Колонны стальные (листы 13–14)
+  const S = (i,j,m) => P(`S-${i}-${j}`,"scol",m,`${AX(i)}/${L[j]}`,{x:i*6,y:j*6,rc:rc.has(i+"-"+j)});
+  for (const i of [0,15]) for (let j = 0; j <= 16; j++) S(i,j,"НК1");
+  for (let i = 1; i <= 14; i++) for (const j of [0,16]) S(i,j,"НК1");
+  for (const j of R1) for (const i of K1) S(i,j,"НК2");
+  // Фермы стропильные Фс1, пролёт 24 м
+  for (const s of [0,4,8,12]) for (let i = 1; i <= 14; i++)
+    P(`T-${i}-${s}`,"truss","Фс1",`ось ${AX(i)}, ${L[s]}–${L[s+4]}`,{x:i*6,y1:s*6,y2:(s+4)*6});
+  // Фермы подстропильные
+  for (const j of R1) for (const [a,b,m] of [[1,4,"Фп2"],[4,7,"Фп2"],[7,10,"Фп2"],[10,12,"Фп3"],[12,14,"Фп3"]])
+    P(`P-${a}-${j}`,"ptruss",m,`ряд ${L[j]}, оси ${AX(a)}–${AX(b)}`,{y:j*6,x1:a*6,x2:b*6});
+  // Распорки Рс1: нижний пояс (лист 13) и верхний пояс (лист 14)
+  const R = (lv,i,j) => P(`R${lv}-${i}-${j}`,"strut","Рс1",`${lv==="b"?"низ":"верх"}, ряд ${L[j]}, оси ${AX(i)}–${AX(i+1)}`,{lv,y:j*6,x1:i*6,x2:i*6+6});
+  for (let j = 1; j <= 15; j += 2) for (let i = 1; i <= 13; i++) R("b",i,j);
+  for (let j = 1; j <= 15; j++) { if (j % 4) for (let i = 1; i <= 13; i++) R("t",i,j); R("t",0,j); R("t",14,j); }
+  for (const j of [0,16]) for (let i = 0; i <= 14; i++) R("t",i,j);
+  // Связи вертикальные Свп1
+  for (const i of [1,13]) for (let j = 1; j <= 15; j += 2)
+    P(`V-${i}-${j}`,"vbrace","Свп1",`ряд ${L[j]}, оси ${AX(i)}–${AX(i+1)}`,{y:j*6,x1:i*6,x2:i*6+6});
+  // Связи горизонтальные Сг1 (по контуру покрытия)
+  const H = (i,j) => P(`H-${i}-${j}`,"hbrace","Сг1",`оси ${AX(i)}–${AX(i+1)} / ${L[j]}–${L[j+1]}`,{x1:i*6,x2:i*6+6,y1:j*6,y2:j*6+6});
+  for (const i of [0,14]) for (let j = 0; j <= 15; j++) H(i,j);
+  for (const j of [0,15]) for (let i = 1; i <= 13; i++) H(i,j);
+  // Площадки +7.500 в осях 1–2 и 15–16 (лист 12)
+  for (const i of [0,14]) {
+    for (let j = 0; j <= 16; j++) P(`B-${i}-${j}`,"beam","Б2",`ряд ${L[j]}, оси ${AX(i)}–${AX(i+1)}`,{y:j*6,x1:i*6,x2:i*6+6});
+    for (let j = 0; j <= 15; j++) {
+      const g = {x1:i*6,x2:i*6+6,y1:j*6,y2:j*6+6}, n = `оси ${AX(i)}–${AX(i+1)} / ${L[j]}–${L[j+1]}`;
+      P(`J-${i}-${j}`,"joist","ВБ1",n,g);
+      P(`D-${i}-${j}`,"deck","Плита",n,Object.assign({},g));
+    }
+  }
+  for (const e of E) {           // центр в плане — для выбора по осям
+    e.cx = e.x !== undefined ? e.x : (e.x1 + e.x2) / 2;
+    e.cy = e.y !== undefined ? e.y : (e.y1 + e.y2) / 2;
+  }
+  return E;
+}
+// Порядковый номер элемента — ключ в журнале Telegram-бота. Новые элементы добавлять только в конец generate().
+const ELS = generate();
+ELS.forEach((e, i) => e.ix = i);
+const BY_ID = new Map(ELS.map(e => [e.id, e]));
+
+// ---- Состояние ----
+const st = {
+  marks: new Map(),   // id -> {d, by, at}
+  sel: new Set(),
+  viewDate: "",
+  hidden: new Set(),
+  hideGhost: false,
+  canWrite: true,
+  mode: "loading",    // "db" | "local"
+  info: null,
+};
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const fmt = d => d ? d.split("-").reverse().join(".") : "";
+const $ = id => document.getElementById(id);
+
+// ================= 3D =================
+const canvas = $("cv");
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 2000);
+camera.position.set(-70, 85, 135);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(0, 5, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.update();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a949c, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-60, 120, 80); scene.add(sun);
+
+const W = (x, y, z) => new THREE.Vector3(x - 45, z, y - 48);
+function boxG(x, y, z0, z1, sx, sy){ const g = new THREE.BoxGeometry(sx, z1 - z0, sy); g.translate(x - 45, (z0 + z1)/2, y - 48); return g; }
+const X1 = new THREE.Vector3(1,0,0);
+function barG(a, b, t){
+  const d = new THREE.Vector3().subVectors(b, a), len = d.length();
+  const g = new THREE.BoxGeometry(len, t, t);
+  const q = new THREE.Quaternion().setFromUnitVectors(X1, d.normalize());
+  g.applyMatrix4(new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(.5), q, new THREE.Vector3(1,1,1)));
+  return g;
+}
+const merge = gs => gs.length === 1 ? gs[0] : THREE.BufferGeometryUtils.mergeBufferGeometries(gs);
+// верхний пояс Фс1: +14.689 у опор, +15.049 в середине пролёта 24 м
+const topZ = y => { const l = ((y % 24) + 24) % 24; return 14.689 + 0.36 * (1 - Math.abs(l - 12) / 12); };
+const ZB = 12.4;   // низ ферм
+
+function trussG(x0, y0, x1, y1, n, zt, t){
+  const gs = [], B = [], T = [];
+  for (let k = 0; k <= n; k++){ const x = x0 + (x1-x0)*k/n, y = y0 + (y1-y0)*k/n; B.push(W(x,y,ZB)); T.push(W(x,y,zt(x,y))); }
+  for (let k = 0; k < n; k++){
+    gs.push(barG(B[k],B[k+1],t), barG(T[k],T[k+1],t));
+    gs.push(k % 2 ? barG(T[k],B[k+1],t*.7) : barG(B[k],T[k+1],t*.7));
+  }
+  gs.push(barG(B[0],T[0],t*.8), barG(B[n],T[n],t*.8));
+  return merge(gs);
+}
+function geomFor(e){
+  switch(e.t){
+    case "fund": { const s = /РМ6|РМ7/.test(e.m) ? 3.0 : 1.8; return merge([boxG(e.x,e.y,-2.85,-1.95,s,s), boxG(e.x,e.y,-1.95,-0.15,1.2,1.2)]); }
+    case "col": {
+      const sz = {"К1":[.6,.6],"К2":[.5,.6],"К3":[.4,.4],"К5":[.6,.6]}[e.m];
+      const top = e.porch ? 4.5 : e.m === "К3" ? 11.0 : 12.4;
+      return boxG(e.x, e.y, -0.15, top, sz[0], sz[1]);
+    }
+    case "scol": { const s = e.m === "НК2" ? .4 : .3; return boxG(e.x, e.y, e.rc ? 12.4 : 0, e.m === "НК2" ? 15.2 : 16.05, s, s); }
+    case "truss": return trussG(e.x, e.y1, e.x, e.y2, 8, (x,y) => topZ(y), .18);
+    case "ptruss": return trussG(e.x1, e.y, e.x2, e.y, (e.x2-e.x1)/3, () => 15.2, .22);
+    case "strut": { const z = e.lv === "b" ? ZB + .1 : topZ(e.y) - .1; return barG(W(e.x1,e.y,z), W(e.x2,e.y,z), .14); }
+    case "vbrace": { const zt = topZ(e.y) - .15, zb = ZB + .15;
+      return merge([barG(W(e.x1,e.y,zb),W(e.x2,e.y,zt),.1), barG(W(e.x1,e.y,zt),W(e.x2,e.y,zb),.1)]); }
+    case "hbrace": { const z = (a,b) => topZ(b) + .05;
+      return merge([barG(W(e.x1,e.y1,z(e.x1,e.y1)),W(e.x2,e.y2,z(e.x2,e.y2)),.1), barG(W(e.x1,e.y2,z(e.x1,e.y2)),W(e.x2,e.y1,z(e.x2,e.y1)),.1)]); }
+    case "beam": return barG(W(e.x1,e.y,7.2), W(e.x2,e.y,7.2), .3);
+    case "joist": return merge([1.5,3,4.5].map(o => barG(W(e.x1+o,e.y1,7.27),W(e.x1+o,e.y2,7.27),.16)));
+    case "deck": return boxG((e.x1+e.x2)/2, (e.y1+e.y2)/2, 7.35, 7.5, 5.9, 5.9);
+  }
+}
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const M = {};
+function makeMats(){
+  const c = n => new THREE.Color(css(n) || "#888");
+  M.ghostC = new THREE.MeshLambertMaterial({color:c("--ghost"), transparent:true, opacity:.22, depthWrite:false});
+  M.ghostS = new THREE.MeshLambertMaterial({color:c("--ghost"), transparent:true, opacity:.34, depthWrite:false});
+  M.doneC  = new THREE.MeshLambertMaterial({color:c("--done").lerp(new THREE.Color(0x9aa0a3), .35)});
+  M.doneS  = new THREE.MeshLambertMaterial({color:c("--done")});
+  M.today  = new THREE.MeshLambertMaterial({color:c("--today"), emissive:c("--today").multiplyScalar(.25)});
+  M.sel    = new THREE.MeshLambertMaterial({color:c("--accent"), emissive:c("--accent").multiplyScalar(.35)});
+  scene.background = c("--scene");
+}
+makeMats();
+
+const meshes = [];
+for (const e of ELS){
+  const m = new THREE.Mesh(geomFor(e), M.ghostS);
+  m.userData.id = e.id; e.mesh = m;
+  m.geometry.computeBoundingSphere();
+  e.c3 = m.geometry.boundingSphere.center.clone();
+  scene.add(m); meshes.push(m);
+}
+
+// Сетка осей и марки осей
+const gridMat = new THREE.LineBasicMaterial({color:new THREE.Color(css("--grid"))});
+(function(){
+  const pts = [];
+  for (let i = 0; i <= 15; i++) pts.push(W(i*6,-4,0), W(i*6,100,0));
+  for (let j = 0; j <= 16; j++) pts.push(W(-4,j*6,0), W(94,j*6,0));
+  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+})();
+const labelSprites = [];
+function label(text, pos){
+  const cv = document.createElement("canvas"); cv.width = cv.height = 128;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), depthWrite:false}));
+  sp.userData = {cv, text}; sp.position.copy(pos); sp.scale.set(3.2,3.2,1);
+  scene.add(sp); labelSprites.push(sp);
+}
+function drawLabels(){
+  const ink = css("--ink"), bg = css("--surface");
+  for (const sp of labelSprites){
+    const {cv, text} = sp.userData, g = cv.getContext("2d");
+    g.clearRect(0,0,128,128);
+    g.beginPath(); g.arc(64,64,56,0,Math.PI*2); g.fillStyle = bg; g.fill();
+    g.lineWidth = 6; g.strokeStyle = ink; g.stroke();
+    g.fillStyle = ink; g.font = "600 56px Golos Text, system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(text, 64, 68);
+    sp.material.map.needsUpdate = true;
+  }
+}
+for (let i = 0; i <= 15; i++){ label(AX(i), W(i*6,-7,0)); label(AX(i), W(i*6,103,0)); }
+for (let j = 0; j <= 16; j++){ label(L[j], W(-7,j*6,0)); label(L[j], W(97,j*6,0)); }
+drawLabels();
+if (document.fonts) document.fonts.ready.then(drawLabels);
+
+function resize(){
+  const r = canvas.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas.parentElement);
+resize();
+(function loop(){ controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+
+// Тема
+function retheme(){ makeMats(); gridMat.color.set(css("--grid")); drawLabels(); paint(); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+new MutationObserver(retheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+// Выбор касанием
+let down = null;
+canvas.addEventListener("pointerdown", ev => { down = {x:ev.clientX, y:ev.clientY}; });
+canvas.addEventListener("pointerup", ev => {
+  if (!down || Math.hypot(ev.clientX-down.x, ev.clientY-down.y) > 6) { down = null; return; }
+  down = null;
+  const r = canvas.getBoundingClientRect();
+  const p = new THREE.Vector2((ev.clientX - r.left)/r.width*2 - 1, -(ev.clientY - r.top)/r.height*2 + 1);
+  const rc = new THREE.Raycaster(); rc.setFromCamera(p, camera);
+  const vis = meshes.filter(m => m.visible);
+  let hit = rc.intersectObjects(vis, false)[0];
+  let id = hit && hit.object.userData.id;
+  if (!id){   // тонкие элементы: ближайший по экрану в радиусе 22 px
+    let best = 22, v = new THREE.Vector3();
+    for (const m of vis){
+      v.copy(BY_ID.get(m.userData.id).c3).project(camera);
+      if (v.z > 1) continue;
+      const d = Math.hypot((v.x+1)/2*r.width - (ev.clientX-r.left), (1-v.y)/2*r.height - (ev.clientY-r.top));
+      if (d < best){ best = d; id = m.userData.id; }
+    }
+  }
+  if (!id) { st.info = null; renderInfo(); return; }
+  if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id);
+  st.info = id;
+  paint(); renderSel(); renderInfo();
+});
+
+// ================= Отрисовка состояния =================
+function stateOf(e){
+  const m = st.marks.get(e.id);
+  if (!m) return null;
+  if (st.viewDate && m.d > st.viewDate) return null;
+  return m;
+}
+function focusDate(){
+  if (st.viewDate) return st.viewDate;
+  let mx = ""; for (const m of st.marks.values()) if (m.d > mx) mx = m.d;
+  return mx;
+}
+function paint(){
+  const fd = focusDate();
+  for (const e of ELS){
+    const fam = TYPES[e.t].fam === "c" ? "C" : "S";
+    const m = stateOf(e);
+    let mat;
+    if (st.sel.has(e.id)) mat = M.sel;
+    else if (m) mat = m.d === fd ? M.today : M["done"+fam];
+    else mat = M["ghost"+fam];
+    e.mesh.material = mat;
+    e.mesh.visible = !st.hidden.has(e.t) && (!st.hideGhost || !!m || st.sel.has(e.id));
+  }
+  $("lgDay").textContent = fd ? "за " + fmt(fd) : "за день";
+}
+
+function renderTotals(){
+  let done = 0; for (const e of ELS) if (stateOf(e)) done++;
+  const pct = Math.round(done / ELS.length * 1000) / 10;
+  $("totPct").textContent = pct + "%";
+  $("totBar").style.width = pct + "%";
+  $("totCnt").textContent = done + " / " + ELS.length;
+}
+function renderProgress(){
+  const box = $("progList"); box.textContent = "";
+  for (const [t, T] of Object.entries(TYPES)){
+    const all = ELS.filter(e => e.t === t), done = all.filter(e => stateOf(e)).length;
+    const marks = [...new Set(all.map(e => e.m))].join(", ");
+    const row = document.createElement("div"); row.className = "prow";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.id = "vis-" + t; cb.checked = !st.hidden.has(t);
+    cb.setAttribute("aria-label", "Показывать: " + T.name);
+    cb.onchange = () => { cb.checked ? st.hidden.delete(t) : st.hidden.add(t); paint(); };
+    const nm = document.createElement("div"); nm.className = "nm";
+    const b = document.createElement("b"); b.textContent = marks; nm.append(b, T.name);
+    const ct = document.createElement("div"); ct.className = "ct"; ct.textContent = done + " / " + all.length;
+    const bar = document.createElement("div"); bar.className = "bar";
+    const i = document.createElement("i"); i.style.width = (done / all.length * 100) + "%"; bar.append(i);
+    row.append(cb, nm, ct, bar); box.append(row);
+  }
+}
+function days(){
+  const map = new Map();
+  for (const [id, m] of st.marks){ const e = BY_ID.get(id); if (!e) continue; if (!map.has(m.d)) map.set(m.d, []); map.get(m.d).push(e); }
+  return [...map.entries()].sort((a,b) => a[0] < b[0] ? 1 : -1);
+}
+function renderLog(){
+  const box = $("logList"); box.textContent = "";
+  const ds = days();
+  if (!ds.length){
+    const p = document.createElement("div"); p.className = "empty";
+    p.textContent = "Пока нет отметок. Выделите смонтированные элементы на модели, укажите дату и нажмите «Смонтировано» — день появится здесь.";
+    box.append(p); return;
+  }
+  for (const [d, list] of ds){
+    const card = document.createElement("div"); card.className = "day" + (d === st.viewDate ? " on" : "");
+    const top = document.createElement("div"); top.className = "top";
+    const dt = document.createElement("span"); dt.className = "dt"; dt.textContent = fmt(d);
+    const n = document.createElement("span"); n.className = "n"; n.textContent = list.length + " шт.";
+    const b = document.createElement("button"); b.className = "btn small";
+    b.textContent = d === st.viewDate ? "Показано" : "Показать на модели";
+    b.onclick = () => setViewDate(d === st.viewDate ? "" : d);
+    top.append(dt, n, b);
+    const ul = document.createElement("ul");
+    const cnt = {}; for (const e of list) { const k = e.m; cnt[k] = (cnt[k] || 0) + 1; }
+    for (const [k, v] of Object.entries(cnt)){ const li = document.createElement("li"); li.textContent = k + " — " + v; ul.append(li); }
+    card.append(top, ul); box.append(card);
+  }
+}
+function renderViewDates(){
+  const s = $("viewDate"), cur = st.viewDate; s.textContent = "";
+  const o = new Option("сегодня (всё)", ""); s.append(o);
+  for (const [d] of days()) s.append(new Option(fmt(d), d));
+  s.value = cur;
+}
+function renderSel(){
+  const n = st.sel.size;
+  $("selN").textContent = n;
+  const ch = $("selChips"); ch.textContent = "";
+  [...st.sel].slice(0, 40).forEach(id => { const e = BY_ID.get(id); const s = document.createElement("span"); s.className = "chip"; s.textContent = e.m + " " + e.n; ch.append(s); });
+  if (n > 40){ const s = document.createElement("span"); s.className = "chip"; s.textContent = "+ ещё " + (n - 40); ch.append(s); }
+  const anyMarked = [...st.sel].some(id => st.marks.has(id));
+  $("bMount").disabled = !n || !st.canWrite || st.mode === "loading";
+  $("bUnmount").disabled = !anyMarked || !st.canWrite || st.mode === "loading";
+  $("bClear").disabled = !n;
+  $("unConfirm").hidden = true;
+}
+let whoNames = {};
+async function renderInfo(){
+  const box = $("info");
+  if (!st.info){ box.hidden = true; return; }
+  const e = BY_ID.get(st.info), m = st.marks.get(e.id);
+  box.hidden = false; box.textContent = "";
+  const mk = document.createElement("div"); mk.className = "mk"; mk.textContent = e.m + " · " + e.n;
+  const tp = document.createElement("div"); tp.className = "st"; tp.textContent = TYPES[e.t].name;
+  const s = document.createElement("div"); s.className = "st";
+  s.textContent = m ? "Смонтировано " + fmt(m.d) + (m.by && whoNames[m.by] ? " · отметил(а) " + whoNames[m.by] : "") : "Не смонтировано";
+  box.append(mk, tp, s);
+  if (m && m.by && !whoNames[m.by] && userCap){
+    try { const ps = await userCap.profiles([m.by]); whoNames[m.by] = (ps[m.by] && ps[m.by].name) || ""; if (whoNames[m.by] && st.info === e.id) renderInfo(); } catch(_){}
+  }
+}
+function renderAll(){ paint(); renderTotals(); renderProgress(); renderLog(); renderViewDates(); renderSel(); renderInfo(); }
+function setViewDate(d){ st.viewDate = d; renderAll(); }
+
+let toastT;
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+function banner(msg, kind){ const b = $("banner"); b.textContent = msg; b.dataset.kind = kind || ""; b.hidden = !msg; }
+
+// ================= Хранилище =================
+let db = null, userCap = null, myId = null;
+const LKEY = "kr-montazh-v1";
+function loadLocal(){
+  try { const o = JSON.parse(localStorage.getItem(LKEY) || "{}"); st.marks = new Map(Object.entries(o)); } catch(_){ st.marks = new Map(); }
+}
+function saveLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(Object.fromEntries(st.marks))); } catch(_){} }
+
+async function pool(items, fn, n = 6){
+  let i = 0, fails = 0;
+  await Promise.all(Array.from({length:Math.min(n, items.length)}, async () => {
+    while (i < items.length){ const it = items[i++]; try { await fn(it); } catch(e){ fails++; if (e && e.code === "invalid_argument") st.canWrite = false; } }
+  }));
+  return fails;
+}
+// ---- Telegram: состояние из ссылки "#m1~<время36>~<ггммдд.ггммдд>~<v.c_v.c…>" ----
+function loadFromHash(){
+  const p = decodeURIComponent(location.hash.slice(1)).split("~");
+  if (p[0] !== "m1") return null;
+  const dates = p[2] ? p[2].split(".").map(s => "20" + s.slice(0,2) + "-" + s.slice(2,4) + "-" + s.slice(4,6)) : [];
+  const m = new Map(); let k = 0;
+  for (const run of (p[3] || "").split("_")){
+    if (!run) continue;
+    const [v, c] = run.split(".").map(x => parseInt(x, 36));
+    for (let n = 0; n < c; n++, k++) if (v > 0 && ELS[k] && dates[v-1]) m.set(ELS[k].id, {d: dates[v-1]});
+  }
+  st.marks = m;
+  return new Date(parseInt(p[1], 36) * 1000);
+}
+function ixRanges(ids){
+  const xs = ids.map(id => BY_ID.get(id).ix).sort((a,b) => a - b), out = [];
+  for (let i = 0; i < xs.length; ){
+    let j = i; while (j + 1 < xs.length && xs[j+1] === xs[j] + 1) j++;
+    out.push(i === j ? String(xs[i]) : xs[i] + "-" + xs[j]); i = j + 1;
+  }
+  return out.join(".");
+}
+function sendToBot(a, ids, d){
+  const cnt = {}; for (const id of ids){ const m = BY_ID.get(id).m; cnt[m] = (cnt[m] || 0) + 1; }
+  const s = Object.entries(cnt).map(([k,v]) => k + " — " + v).join(", ").slice(0, 600);
+  const data = JSON.stringify({a, d, i: ixRanges(ids), n: ELS.length, s});
+  if (new TextEncoder().encode(data).length > 4000){ toast("Слишком много элементов за раз — отметьте частями"); return 1; }
+  TG.sendData(data);   // Telegram закрывает окно, бот отвечает в чате
+  return 0;
+}
+
+async function mount(ids, d){
+  const rec = {d, by: myId || "", at: new Date().toISOString()};
+  if (st.mode === "tg") return sendToBot("m", ids, d);
+  if (st.mode === "db"){
+    const col = db.collection("mount");
+    for (const id of ids) st.marks.set(id, rec);   // сразу на модели, подтвердит onSnapshot
+    renderAll();
+    return pool(ids, id => col.doc(id).set(rec));
+  }
+  for (const id of ids) st.marks.set(id, rec); saveLocal(); renderAll(); return 0;
+}
+async function unmount(ids){
+  if (st.mode === "tg") return sendToBot("u", ids, "");
+  if (st.mode === "db"){
+    const col = db.collection("mount");
+    for (const id of ids) st.marks.delete(id);
+    renderAll();
+    return pool(ids, id => col.doc(id).delete());
+  }
+  for (const id of ids) st.marks.delete(id); saveLocal(); renderAll(); return 0;
+}
+
+async function connect(){
+  if (TG){
+    st.mode = "tg";
+    $("bCsv").closest(".sec").hidden = true;
+    const at = loadFromHash();
+    banner(at ? "Журнал на " + at.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) + ". После отметки окно закроется, бот пришлёт подтверждение."
+              : "Откройте модель кнопкой «Модель склада» в чате бота — так подтянется журнал.", at ? "" : "warn");
+    renderAll(); return;
+  }
+  const use = window.claude && window.claude.use;
+  if (!use){ toLocal(); return; }
+  try { [db, userCap] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch(_){ db = null; }
+  if (!db){ toLocal(); return; }
+  if (userCap){
+    try { myId = await userCap.id(); } catch(_){}
+    try { const c = await userCap.can("data.write"); if (c === false) st.canWrite = false; } catch(_){}
+  }
+  st.mode = "db";
+  let first = true;
+  const timer = setTimeout(() => banner("Журнал пока недоступен — проверьте связь. Отметки появятся, когда соединение восстановится.", "warn"), 10000);
+  db.collection("mount").onSnapshot(snap => {
+    const m = new Map();
+    for (const d of snap.docs){ const v = d.data(); if (v && v.d) m.set(d.id, {d:v.d, by:v.by, at:v.at}); }
+    st.marks = m;
+    if (!snap.metadata.fromCache){ clearTimeout(timer); banner(st.canWrite ? "" : "Режим просмотра: отмечать монтаж могут участники с правом редактирования."); }
+    if (first){ first = false; if (!st.viewDate) {} }
+    renderAll();
+  }, err => {
+    clearTimeout(timer);
+    banner("Связь с журналом прервана. Обновите страницу позже.", "warn");
+  });
+  renderSel();
+}
+function toLocal(){
+  st.mode = "local"; loadLocal();
+  banner("Отметки сохраняются только в этом браузере. Чтобы журнал видели все, откройте опубликованную версию.", "warn");
+  renderAll();
+}
+
+// ================= Панель =================
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  for (const t of ["mark","prog","log"]) $("tab-" + t).hidden = b.dataset.tab !== t;
+}));
+$("mdate").value = today();
+for (let i = 0; i <= 15; i++){ $("ax1").append(new Option(AX(i), i)); $("ax2").append(new Option(AX(i), i)); }
+for (let j = 0; j <= 16; j++){ $("rw1").append(new Option(L[j], j)); $("rw2").append(new Option(L[j], j)); }
+$("ax2").value = 15; $("rw2").value = 16;
+$("rtype").append(new Option("Все виды", ""));
+for (const [t, T] of Object.entries(TYPES)) $("rtype").append(new Option(T.name, t));
+
+$("bRange").onclick = () => {
+  let a = +$("ax1").value, b = +$("ax2").value, c = +$("rw1").value, d = +$("rw2").value;
+  if (a > b) [a,b] = [b,a]; if (c > d) [c,d] = [d,c];
+  const t = $("rtype").value, only = $("onlyNot").checked, eps = .01;
+  let n = 0;
+  for (const e of ELS){
+    if (t && e.t !== t) continue;
+    if (st.hidden.has(e.t)) continue;
+    if (only && st.marks.has(e.id)) continue;
+    if (e.cx < a*6 - eps || e.cx > b*6 + eps || e.cy < c*6 - eps || e.cy > d*6 + eps) continue;
+    if (!st.sel.has(e.id)){ st.sel.add(e.id); n++; }
+  }
+  paint(); renderSel();
+  toast(n ? "Добавлено к выделению: " + n : "В этом участке нечего выделить");
+};
+$("bClear").onclick = () => { st.sel.clear(); paint(); renderSel(); };
+$("bMount").onclick = async () => {
+  const d = $("mdate").value || today();
+  const ids = [...st.sel];
+  if (st.mode === "tg"){ sendToBot("m", ids, d); return; }
+  st.sel.clear();
+  const fails = await mount(ids, d);
+  renderSel();
+  toast(fails ? `Сохранено ${ids.length - fails} из ${ids.length}. Остальные не записались — повторите.` : `Отмечено ${ids.length} шт. за ${fmt(d)}`);
+};
+$("bUnmount").onclick = () => {
+  const n = [...st.sel].filter(id => st.marks.has(id)).length;
+  $("unText").textContent = `Снять отметку монтажа с ${n} шт.?`;
+  $("unConfirm").hidden = false;
+};
+$("bUnNo").onclick = () => { $("unConfirm").hidden = true; };
+$("bUnYes").onclick = async () => {
+  const ids = [...st.sel].filter(id => st.marks.has(id));
+  if (st.mode === "tg"){ sendToBot("u", ids, ""); return; }
+  st.sel.clear();
+  const fails = await unmount(ids);
+  renderSel();
+  toast(fails ? "Часть отметок не снялась — повторите." : `Снято отметок: ${ids.length}`);
+};
+$("viewDate").onchange = ev => setViewDate(ev.target.value);
+$("hideGhost").onchange = ev => { st.hideGhost = ev.target.checked; paint(); };
+
+$("bCsv").onclick = async () => {
+  const rows = [["Вид","Марка","Расположение","Статус","Дата монтажа"]];
+  for (const e of ELS){ const m = st.marks.get(e.id); rows.push([TYPES[e.t].name, e.m, e.n, m ? "смонтировано" : "не смонтировано", m ? fmt(m.d) : ""]); }
+  const csv = "﻿" + rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
+  const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+  if (!dl){ $("csvHint").hidden = false; return; }
+  try { await dl.save({filename:"монтаж_склада_" + today() + ".csv", data:new Blob([csv], {type:"text/csv"})}); }
+  catch(_){ toast("Файл не сохранён"); }
+};
+
+renderAll();
+connect();
+})();
+</script>
+
+</body></html>

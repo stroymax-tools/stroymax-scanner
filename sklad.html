@@ -224,7 +224,8 @@ select,input[type=date],input[type=text],input[type=number],textarea{font:14px v
 (function(){
 "use strict";
 // Внутри Telegram (Mini App) журнал приходит в ссылке от бота, отметки уходят боту через sendData
-const TG = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData ? Telegram.WebApp : null;
+// При запуске с нижней кнопки initData пуст, поэтому Telegram определяем по platform: вне него она "unknown"
+const TG = window.Telegram && Telegram.WebApp && Telegram.WebApp.platform && Telegram.WebApp.platform !== "unknown" ? Telegram.WebApp : null;
 if (TG){ TG.ready(); TG.expand(); document.documentElement.dataset.theme = TG.colorScheme === "dark" ? "dark" : "light"; }
 const L = "АБВГДЕЖИКЛМНПРСТУ";            // буквенные оси, шаг 6 м
 const AX = i => String(i + 1);              // цифровые оси 1..16, шаг 6 м

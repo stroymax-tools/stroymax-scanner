@@ -707,7 +707,7 @@ async function connect(){
     $("markExtra").hidden = false; $("t-jr").hidden = false; $("stockPill").hidden = false;
     try { $("mBrig").value = localStorage.getItem("kr-brig") || ""; } catch(_){}
     const at = loadFromHash();
-    if (st.view === "in"){ $("jrSel").value = "in"; drawJrForm(); openTab("jr"); }
+    if (st.view === "in"){ arrivalMode(); $("jrSel").value = "in"; drawJrForm(); openTab("jr"); }
     if (st.view === "jr"){ openTab("jr"); }
     banner(at ? "Журнал на " + at.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) + ". После отметки окно закроется, бот пришлёт подтверждение."
               : "Откройте модель кнопкой «Модель склада» в чате бота — так подтянется журнал.", at ? "" : "warn");
@@ -776,9 +776,31 @@ const JF = {
   g6: {t:"Общий журнал, раздел 6: госстройнадзор", f:[["d","Дата мероприятия","date"],["info","Данные о мероприятии"],["deadline","Срок устранения","date"],["fixed","Дата устранения","date"]]},
 };
 for (const [k, j] of Object.entries(JF)) $("jrSel").append(new Option(j.t, k));
+// Экран входного контроля: выделенное на модели прибыло на площадку, а не смонтировано
+let inItems = null;
+function arrivalMode(){
+  st.arrival = true;
+  $("bMount").textContent = "Прибыло на площадку";
+  $("mdate").previousSibling.textContent = "Дата доставки";
+  $("markExtra").hidden = true; $("bUnmount").hidden = true;
+}
+function arrivalFromSelection(){
+  const cnt = {}; for (const id of st.sel){ const m = BY_ID.get(id).m; cnt[m] = (cnt[m] || 0) + 1; }
+  const list = Object.entries(cnt), d = $("mdate").value;
+  $("jrSel").value = "in"; drawJrForm(); openTab("jr");
+  if (d) $("jf-d").value = d;
+  inItems = list.length > 1 ? list : null;
+  if (list.length === 1){ $("jf-name").value = list[0][0]; $("jf-mark").value = list[0][0]; $("jf-qty").value = list[0][1]; }
+  if (inItems){
+    for (const k of ["name","mark","qty"]) $("jf-" + k).closest("label").hidden = true;
+    $("jrHint").textContent = "Прибыло: " + list.map(([m, n]) => m + " — " + n + " шт.").join(", ") + " По каждой марке будет своя запись.";
+  }
+}
 function drawJrForm(){
   const key = $("jrSel").value, box = $("jrForm"); box.textContent = "";
-  const sel = [...st.sel].map(id => { const e = BY_ID.get(id); return e.m + " " + e.n; }).join(", ").slice(0, 300);
+  inItems = null;
+  $("bJr").textContent = key === "in" ? "Прибыло на площадку" : "Записать";
+  const sel =[...st.sel].map(id => { const e = BY_ID.get(id); return e.m + " " + e.n; }).join(", ").slice(0, 300);
   $("jrHint").textContent = sel ? "Место подставлено из выделения на модели." : "Выделите элементы на модели, чтобы подставить их в поле с местом.";
   for (const [k, label, type, def] of JF[key].f){
     const l = document.createElement("label"); l.className = "fld"; l.append(label);
@@ -802,9 +824,9 @@ $("jrSel").onchange = drawJrForm;
 $("bJr").onclick = () => {
   const key = $("jrSel").value, f = {};
   document.querySelectorAll("#jrForm [data-key]").forEach(c => f[c.dataset.key] = c.value.trim());
-  if (key === "in" && (!f.name || !f.qty)){ toast("Укажите наименование и количество"); return; }
+  if (key === "in" && !inItems && (!f.name || !f.qty)){ toast("Укажите наименование и количество"); return; }
   if (!Object.values(f).some(Boolean)){ toast("Форма пустая"); return; }
-  const data = JSON.stringify({a:"j", j:key, f});
+  const data = JSON.stringify(inItems ? {a:"j", j:key, f, items:inItems} : {a:"j", j:key, f});
   if (new TextEncoder().encode(data).length > 4000){ toast("Слишком длинная запись, сократите текст"); return; }
   if (TG) TG.sendData(data);
 };
@@ -836,6 +858,7 @@ $("bClear").onclick = () => { st.sel.clear(); paint(); renderSel(); };
 $("bMount").onclick = async () => {
   const d = $("mdate").value || today();
   const ids = [...st.sel];
+  if (st.arrival){ arrivalFromSelection(); return; }
   if (st.mode === "tg"){ sendToBot("m", ids, d); return; }
   st.sel.clear();
   const fails = await mount(ids, d);

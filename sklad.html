@@ -7,18 +7,18 @@
 /* Layout: 3D viewport fills the left, a working panel docks right (stacks under the model on phones). */
 :root{
   --bg:#eef1f3; --surface:#ffffff; --line:#d5dbe0; --ink:#1b2229; --muted:#5d6873;
-  --accent:#2d6cdf; --done:#2f8f6b; --today:#e09a00; --ghost:#9aa6b1; --danger:#b8412f;
+  --accent:#2d6cdf; --done:#2f8f6b; --today:#e09a00; --ghost:#9aa6b1; --danger:#b8412f; --have:#7a58c9; --none:#c9483b;
   --scene:#e4e9ed; --grid:#b9c3cc;
   --f-ui:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#12161a; --surface:#1a2026; --line:#2c353d; --ink:#e3e8ec; --muted:#93a0ab;
-  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c;
+  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c; --have:#a68bf0; --none:#e8705f;
   --scene:#161b20; --grid:#36414b; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12161a; --surface:#1a2026; --line:#2c353d; --ink:#e3e8ec; --muted:#93a0ab;
-  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c;
+  --accent:#5b93f0; --done:#3fb58a; --today:#f2b230; --ghost:#5d6a76; --danger:#e0705c; --have:#a68bf0; --none:#e8705f;
   --scene:#161b20; --grid:#36414b; color-scheme:dark}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -52,7 +52,7 @@ header .sub{color:var(--muted);font-size:12px}
 .sec h3{margin:0;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1;min-width:0}
-select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0;width:100%}
+select,input[type=date],input[type=text],input[type=number],textarea{font:14px var(--f-ui);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0;width:100%}
 .btn{font:600 14px var(--f-ui);border-radius:6px;padding:10px 14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .btn:hover{border-color:var(--muted)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -88,7 +88,7 @@ select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--
 .ov>*{pointer-events:auto}
 .ov.tl{top:12px;left:max(12px,env(safe-area-inset-left,0px));right:12px}
 .ov.bl{bottom:12px;left:max(12px,env(safe-area-inset-left,0px));right:12px;align-items:flex-end}
-.pill{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.pill{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;max-width:100%;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .pill select{width:auto;padding:4px 6px;font-size:12px}
 .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .lg i{width:10px;height:10px;border-radius:2px;display:inline-block}
@@ -125,6 +125,11 @@ select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--
           <select id="viewDate"><option value="">сегодня</option></select>
         </div>
         <div class="pill"><label class="lg" for="hideGhost"><input type="checkbox" id="hideGhost"> только смонтированное</label></div>
+        <div class="pill" id="stockPill" hidden>
+          <label class="lg" for="stockMode"><input type="checkbox" id="stockMode"> материалы на площадке</label>
+          <span class="lg"><i style="background:var(--have)"></i>есть</span>
+          <span class="lg"><i style="background:var(--none)"></i>нет</span>
+        </div>
       </div>
       <div class="ov bl"><div class="pill info" id="info" hidden></div></div>
     </div>
@@ -134,6 +139,7 @@ select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--
         <button role="tab" aria-selected="true" data-tab="mark" id="t-mark">Отметка</button>
         <button role="tab" aria-selected="false" data-tab="prog" id="t-prog">Прогресс</button>
         <button role="tab" aria-selected="false" data-tab="log" id="t-log">Журнал</button>
+        <button role="tab" aria-selected="false" data-tab="jr" id="t-jr" hidden>Записи</button>
       </div>
 
       <div class="tab" id="tab-mark">
@@ -141,6 +147,14 @@ select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--
           <div class="selcount"><span id="selN">0</span><small>элементов выделено</small></div>
           <div class="chips" id="selChips"></div>
           <label class="fld">Дата монтажа<input type="date" id="mdate"></label>
+          <div class="sec" id="markExtra" hidden>
+            <div class="row">
+              <label class="fld">Смена<select id="mShift"><option>1</option><option>2</option></select></label>
+              <label class="fld">Бригадир<input type="text" id="mBrig"></label>
+            </div>
+            <label class="fld">Погода (температура, осадки, ветер)<input type="text" id="mWeather"></label>
+            <label class="fld">Результат осмотра конструкций<input type="text" id="mInspect" value="Дефектов нет"></label>
+          </div>
           <div class="row">
             <button class="btn primary" id="bMount" disabled>Смонтировано</button>
             <button class="btn warn" id="bUnmount" disabled>Снять отметку</button>
@@ -186,6 +200,16 @@ select,input[type=date]{font:14px var(--f-ui);color:var(--ink);background:var(--
         <div class="sec">
           <h3>Смонтировано по дням</h3>
           <div id="logList"></div>
+        </div>
+      </div>
+
+      <div class="tab" id="tab-jr" hidden>
+        <div class="sec">
+          <label class="fld">Журнал<select id="jrSel"></select></label>
+          <p class="hint" id="jrHint"></p>
+          <div class="sec" id="jrForm"></div>
+          <button class="btn primary block" id="bJr">Записать</button>
+          <p class="hint">После записи окно закроется, бот пришлёт подтверждение.</p>
         </div>
       </div>
     </div>
@@ -282,6 +306,7 @@ function generate(){
 const ELS = generate();
 ELS.forEach((e, i) => e.ix = i);
 const BY_ID = new Map(ELS.map(e => [e.id, e]));
+const MARKS = [...new Set(ELS.map(e => e.m))];   // тот же порядок, что elements.MARKS в боте
 
 // ---- Состояние ----
 const st = {
@@ -370,6 +395,8 @@ function makeMats(){
   M.doneS  = new THREE.MeshLambertMaterial({color:c("--done")});
   M.today  = new THREE.MeshLambertMaterial({color:c("--today"), emissive:c("--today").multiplyScalar(.25)});
   M.sel    = new THREE.MeshLambertMaterial({color:c("--accent"), emissive:c("--accent").multiplyScalar(.35)});
+  M.have   = new THREE.MeshLambertMaterial({color:c("--have")});
+  M.none   = new THREE.MeshLambertMaterial({color:c("--none"), transparent:true, opacity:.75});
   scene.background = c("--scene");
 }
 makeMats();
@@ -469,6 +496,14 @@ function focusDate(){
   let mx = ""; for (const m of st.marks.values()) if (m.d > mx) mx = m.d;
   return mx;
 }
+// Монолит на площадку не привозят поштучно: наличие считаем только для сборных и стальных элементов
+const isMonolith = e => e.t === "fund" || e.t === "deck";
+// Принято по входному контролю минус смонтировано этой марки
+function stockOf(mark){
+  const got = st.stock ? (st.stock[mark] || 0) : 0;
+  let mounted = 0; for (const e of ELS) if (e.m === mark && st.marks.has(e.id)) mounted++;
+  return {got, mounted, left: Math.max(got - mounted, 0)};
+}
 function paint(){
   const fd = focusDate();
   for (const e of ELS){
@@ -477,6 +512,7 @@ function paint(){
     let mat;
     if (st.sel.has(e.id)) mat = M.sel;
     else if (m) mat = m.d === fd ? M.today : M["done"+fam];
+    else if (st.stockMode && !isMonolith(e)) mat = stockOf(e.m).left > 0 ? M.have : M.none;
     else mat = M["ghost"+fam];
     e.mesh.material = mat;
     e.mesh.visible = !st.hidden.has(e.t) && (!st.hideGhost || !!m || st.sel.has(e.id));
@@ -565,6 +601,13 @@ async function renderInfo(){
   const s = document.createElement("div"); s.className = "st";
   s.textContent = m ? "Смонтировано " + fmt(m.d) + (m.by && whoNames[m.by] ? " · отметил(а) " + whoNames[m.by] : "") : "Не смонтировано";
   box.append(mk, tp, s);
+  if (st.stock && !isMonolith(e)){
+    const x = stockOf(e.m), b = document.createElement("div"); b.className = "st";
+    b.textContent = x.left > 0 ? `На площадке: ${e.m} — есть ${x.left} шт. (принято ${x.got}, смонтировано ${x.mounted})`
+      : `На площадке: ${e.m} — нет (принято ${x.got}, смонтировано ${x.mounted})`;
+    b.style.color = x.left > 0 ? "var(--have)" : "var(--none)";
+    box.append(b);
+  }
   if (m && m.by && !whoNames[m.by] && userCap){
     try { const ps = await userCap.profiles([m.by]); whoNames[m.by] = (ps[m.by] && ps[m.by].name) || ""; if (whoNames[m.by] && st.info === e.id) renderInfo(); } catch(_){}
   }
@@ -603,6 +646,13 @@ function loadFromHash(){
     for (let n = 0; n < c; n++, k++) if (v > 0 && ELS[k] && dates[v-1]) m.set(ELS[k].id, {d: dates[v-1]});
   }
   st.marks = m;
+  st.stock = {};
+  for (const run of (p[4] || "").split("_")){
+    if (!run) continue;
+    const [i, q] = run.split(".").map(x => parseInt(x, 36));
+    if (MARKS[i]) st.stock[MARKS[i]] = q;
+  }
+  st.view = p[5] || "";
   return new Date(parseInt(p[1], 36) * 1000);
 }
 function ixRanges(ids){
@@ -616,7 +666,13 @@ function ixRanges(ids){
 function sendToBot(a, ids, d){
   const cnt = {}; for (const id of ids){ const m = BY_ID.get(id).m; cnt[m] = (cnt[m] || 0) + 1; }
   const s = Object.entries(cnt).map(([k,v]) => k + " — " + v).join(", ").slice(0, 600);
-  const data = JSON.stringify({a, d, i: ixRanges(ids), n: ELS.length, s});
+  const payload = {a, d, i: ixRanges(ids), n: ELS.length, s};
+  if (a === "m"){   // попадает в журнал монтажа и общий журнал
+    payload.sh = $("mShift").value; payload.br = $("mBrig").value.trim();
+    payload.w = $("mWeather").value.trim(); payload.ins = $("mInspect").value.trim();
+    try { localStorage.setItem("kr-brig", payload.br); } catch(_){}
+  }
+  const data = JSON.stringify(payload);
   if (new TextEncoder().encode(data).length > 4000){ toast("Слишком много элементов за раз — отметьте частями"); return 1; }
   TG.sendData(data);   // Telegram закрывает окно, бот отвечает в чате
   return 0;
@@ -648,7 +704,11 @@ async function connect(){
   if (TG){
     st.mode = "tg";
     $("bCsv").closest(".sec").hidden = true;
+    $("markExtra").hidden = false; $("t-jr").hidden = false; $("stockPill").hidden = false;
+    try { $("mBrig").value = localStorage.getItem("kr-brig") || ""; } catch(_){}
     const at = loadFromHash();
+    if (st.view === "in"){ $("jrSel").value = "in"; drawJrForm(); openTab("jr"); }
+    if (st.view === "jr"){ openTab("jr"); }
     banner(at ? "Журнал на " + at.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) + ". После отметки окно закроется, бот пришлёт подтверждение."
               : "Откройте модель кнопкой «Модель склада» в чате бота — так подтянется журнал.", at ? "" : "warn");
     renderAll(); return;
@@ -684,10 +744,72 @@ function toLocal(){
 }
 
 // ================= Панель =================
-document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
-  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
-  for (const t of ["mark","prog","log"]) $("tab-" + t).hidden = b.dataset.tab !== t;
-}));
+function openTab(name){
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x.dataset.tab === name));
+  for (const t of ["mark","prog","log","jr"]) $("tab-" + t).hidden = name !== t;
+}
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => openTab(b.dataset.tab)));
+
+// ---- Формы журналов (ключи совпадают с forms.INPUT в боте) ----
+const COND = ["Соответствует","Не соответствует"];
+const JF = {
+  in: {t:"Журнал входного контроля", f:[["d","Дата доставки","date"],["name","Наименование материала, изделия, конструкции"],["mark","Марка элемента модели","mark"],
+    ["qty","Количество","number"],["unit","Ед. изм.","text","шт"],["supplier","Поставщик"],["doc","Документ изготовителя: наименование и №"],
+    ["visual","Результат проверки документов и осмотра",COND],["need","Инструментальный контроль",["Не требуется","Требуется"]],["instr","Результат инструментального контроля"]]},
+  conc: {t:"Журнал бетонных работ", f:[["d","Дата укладки","date"],["time","Время укладки"],["place","Конструкция и расположение (оси, отметка)","place"],["supplier","Изготовитель (поставщик) смеси"],
+    ["mix","Обозначение смеси (марка, класс) и № документа о качестве"],["vol","Объём партии, м³","number"],["t","Температура воздуха, °С"],["cure","Способ и режим твердения"],
+    ["bnorm","Класс прочности: нормируемый (Внорм)"],["bfact","Класс прочности: фактический (Вф)"],["rnorm","Прочность в промежуточном возрасте: нормируемая, %"],["rfact","Прочность в промежуточном возрасте: фактическая, %"],
+    ["ravgi","Средняя прочность образцов в промежуточном возрасте, МПа"],["ravgp","Средняя прочность образцов в проектном возрасте, МПа"],["care","Уход за бетоном"]]},
+  weld: {t:"Журнал сварочных работ", f:[["d","Дата","date"],["shift","Смена"],["elem","Соединяемые элементы","place"],["steel","Марка стали"],["place","Место или № по чертежу"],
+    ["electrode","Сварочные материалы (электроды, проволока, флюс), № партии"],["mode","Режим сварки"],["weather","Температура, осадки, ветер"],["welder","ФИО сварщика, № удостоверения"],["stamp","Клеймо"],
+    ["resp","Ответственный (мастер, прораб)"],["il","Отметка о приёмке представителем ИЛ"],["remarks","Замечания"]]},
+  mount: {t:"Журнал монтажа (ручная запись)", f:[["d","Дата","date"],["shift","Смена"],["desc","Работы, конструкции, марка, результаты осмотра"],["place","Место установки, № монтажных схем","place"],
+    ["pass","№ технических паспортов"],["weather","Температура, осадки, ветер"],["brig","ФИО бригадира"],["remarks","Замечания"]]},
+  anti: {t:"Журнал антикоррозионной защиты", f:[["d","Дата","date"],["elem","Соединяемые элементы и заводское покрытие"],["place","Место или № по чертежу","place"],["coat","Материал покрытия и способ нанесения"],
+    ["weather","Температура, осадки"],["exec","ФИО исполнителя"],["resp","Ответственный (мастер, прораб)"],["thick","Результаты осмотра, толщина покрытия"],["remarks","Замечания"]]},
+  bolt: {t:"Журнал соединений на болтах", f:[["d","Дата","date"],["node","№ чертежа КМД, узел, ряд, ось, отметка","place"],["count","Поставлено болтов, шт.","number"],["cert","№ сертификата на болты"],["surface","Обработка контактных поверхностей"],
+    ["moment","Расчётный момент, кгс·м, угол поворота, град."],["quality","Качество обработки поверхностей"],["checked","Проверено болтов, шт.","number"],["result","Результаты проверки момента, угла"],["stamp","№ клейма"]]},
+  g3: {t:"Общий журнал, раздел 3: выполнение работ", f:[["d","Дата","date"],["cond","Условия производства работ"],["work","Работы с осями и отметками, методы, материалы, испытания","place"]]},
+  g1: {t:"Общий журнал, раздел 1: ИТР", f:[["org","Организация"],["who","ФИО, должность"],["from","Начало работ","date"],["to","Окончание работ","date"]]},
+  g4: {t:"Общий журнал, раздел 4: стройконтроль", f:[["d","Дата","date"],["info","Сведения о контроле"],["defects","Выявленные недостатки"],["deadline","Срок устранения","date"],["fixed","Дата устранения","date"]]},
+  g5: {t:"Общий журнал, раздел 5: исполнительная документация", f:[["name","Документ, реквизиты, вид работ"],["signed","Дата подписания, кто подписал"]]},
+  g6: {t:"Общий журнал, раздел 6: госстройнадзор", f:[["d","Дата мероприятия","date"],["info","Данные о мероприятии"],["deadline","Срок устранения","date"],["fixed","Дата устранения","date"]]},
+};
+for (const [k, j] of Object.entries(JF)) $("jrSel").append(new Option(j.t, k));
+function drawJrForm(){
+  const key = $("jrSel").value, box = $("jrForm"); box.textContent = "";
+  const sel = [...st.sel].map(id => { const e = BY_ID.get(id); return e.m + " " + e.n; }).join(", ").slice(0, 300);
+  $("jrHint").textContent = sel ? "Место подставлено из выделения на модели." : "Выделите элементы на модели, чтобы подставить их в поле с местом.";
+  for (const [k, label, type, def] of JF[key].f){
+    const l = document.createElement("label"); l.className = "fld"; l.append(label);
+    let c;
+    if (Array.isArray(type) || type === "mark"){
+      c = document.createElement("select");
+      if (type === "mark") c.append(new Option("Нет в модели", ""));
+      for (const v of (type === "mark" ? MARKS : type)) c.append(new Option(v, v));
+    } else {
+      c = document.createElement("input");
+      c.type = type === "date" || type === "number" ? type : "text";
+      if (type === "number") c.step = "any";
+      c.value = def || "";
+      if (type === "place") c.value = sel;
+      if (type === "date" && (k === "d" || k === "from")) c.value = today();
+    }
+    c.id = "jf-" + k; c.dataset.key = k; l.append(c); box.append(l);
+  }
+}
+$("jrSel").onchange = drawJrForm;
+$("bJr").onclick = () => {
+  const key = $("jrSel").value, f = {};
+  document.querySelectorAll("#jrForm [data-key]").forEach(c => f[c.dataset.key] = c.value.trim());
+  if (key === "in" && (!f.name || !f.qty)){ toast("Укажите наименование и количество"); return; }
+  if (!Object.values(f).some(Boolean)){ toast("Форма пустая"); return; }
+  const data = JSON.stringify({a:"j", j:key, f});
+  if (new TextEncoder().encode(data).length > 4000){ toast("Слишком длинная запись, сократите текст"); return; }
+  if (TG) TG.sendData(data);
+};
+$("stockMode").onchange = ev => { st.stockMode = ev.target.checked; paint(); };
+drawJrForm();
 $("mdate").value = today();
 for (let i = 0; i <= 15; i++){ $("ax1").append(new Option(AX(i), i)); $("ax2").append(new Option(AX(i), i)); }
 for (let j = 0; j <= 16; j++){ $("rw1").append(new Option(L[j], j)); $("rw2").append(new Option(L[j], j)); }
@@ -747,6 +869,7 @@ $("bCsv").onclick = async () => {
   catch(_){ toast("Файл не сохранён"); }
 };
 
+window.KR_CHECK = {ids: ELS.map(e => e.id), marks: ELS.map(e => e.m), names: ELS.map(e => e.n), JF};  // для сверки с ботом
 renderAll();
 connect();
 })();

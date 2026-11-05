@@ -637,7 +637,8 @@ async function pool(items, fn, n = 6){
 }
 // ---- Telegram: состояние из ссылки "#m1~<время36>~<ггммдд.ггммдд>~<v.c_v.c…>" ----
 function loadFromHash(){
-  const p = decodeURIComponent(location.hash.slice(1)).split("~");
+  // Telegram дописывает к адресу свои параметры (&tgWebAppVersion=…): наши данные идут до первого & или ?
+  const p = decodeURIComponent(location.hash.slice(1).split(/[&?]/)[0]).split("~");
   if (p[0] !== "m1") return null;
   const dates = p[2] ? p[2].split(".").map(s => "20" + s.slice(0,2) + "-" + s.slice(2,4) + "-" + s.slice(4,6)) : [];
   const m = new Map(); let k = 0;
